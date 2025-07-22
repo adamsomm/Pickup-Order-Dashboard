@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pickup Order Dashboard</title>
+    <style>
+        table {
+            margin: auto;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 8px 12px;
+            border: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Pickup Orders</h1>
+
+    <form method="POST" action="/update-orders">
+        <table>
+            <thead>
+                <tr>
+                    <th>Contact</th>
+                    <th>Company</th>
+                    <th>Titan ID</th>
+                    <th>Details</th>
+                    <th>Pickup Date</th>
+                    <th>Status</th>
+                    <th>Remove</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td>{{ order.get_company() }}</td>
+                    <td>{{ order.get_contact() }}</td>
+                    <td>{{ order.get_titan_number() }}</td>
+                    <td>{{ order.get_details() }}</td>
+                    <td>{{ order.get_pickup_date() }}</td>
+                    <td>{{ "Picked Up" if order.get_status() else "Pending" }}</td>
+                    <td><input type="checkbox" name="remove_rows" value="{{ order.get_unique_id()  }}"></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <br>
+        <button type="submit">Confirm Removal</button>
+    </form>
+</body>
+</html>
