@@ -1,5 +1,6 @@
 from flask import Flask, render_template, redirect, request
-from openpyxl import load_workbook
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 from order import PickupOrder
 import csv
 import os
@@ -7,25 +8,44 @@ import os
 
 app = Flask(__name__)
 
-def load_orders_from_excel():
-    wb = load_workbook('C:\\Users\\matta\\OneDrive - LC\\Lakelands Pickup Order Submission.xlsx')
-    ws = wb.active
+# Google Sheets setup
+def get_google_sheet():
+    scope = ["https://spreadsheets.google.com/feeds",
+             "https://www.googleapis.com/auth/spreadsheets",
+             "https://www.googleapis.com/auth/drive"]
+
+    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+    client = gspread.authorize(creds)
+
+    # Replace with your actual sheet name
+    sheet = client.open("Lakelands Pickup Order Schedule").sheet1
+    return sheet
+
+def load_orders_from_sheet():
+    sheet = get_google_sheet()
+    data = sheet.get_all_values()
+
+    headers = data[0]
+    rows = data[1:]
 
     blacklist = get_blacklisted_ids()
-
     orders = []
-    for idx, row_values in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
-        unique_id = str(row_values[0]).strip() if row_values[0] is not None else ""
-        contact = row_values[5]
-        company = row_values[6]
-        titan_number = row_values[7]
-        details = row_values[8]
-        pickup_date = row_values[9]
 
-        if contact is not None and unique_id not in blacklist:
-            order = PickupOrder(unique_id, contact, company, details, pickup_date, titan_number)
-            order.excel_row = idx
-            orders.append(order)
+    for idx, row_values in enumerate(rows, start=2):  # 1-based indexing for rows
+        try:
+            unique_id = row_values[0]#.strip()
+            contact = row_values[2]
+            company = row_values[1]
+            titan_number = row_values[3]
+            details = row_values[5]
+            pickup_date = row_values[4]
+
+            if contact and unique_id not in blacklist:
+                order = PickupOrder(unique_id, contact, company, details, pickup_date, titan_number)
+                order.excel_row = idx
+                orders.append(order)
+        except IndexError:
+            continue  # skip malformed rows
 
     return orders
 
@@ -51,7 +71,7 @@ if not os.path.exists('blacklist.csv'):
 
 @app.route('/')
 def dashboard():
-    orders = load_orders_from_excel()
+    orders = load_orders_from_sheet()
     return render_template('dashboard.html', orders=orders)
 
 @app.route('/update-orders', methods=['POST'])

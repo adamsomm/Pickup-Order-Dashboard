@@ -18,7 +18,7 @@ class PickupOrder:
     def get_pickup_date(self):
         if not self.pickup_date:
             return "N/A"
-        return self.pickup_date.strftime("%d/%b/%Y, %H:%M:%S")
+        return self.pickup_date#.strftime("%d/%b/%Y, %H:%M:%S")
 
     def get_status(self):
         return self.is_picked_up
